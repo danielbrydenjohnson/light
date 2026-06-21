@@ -1,0 +1,2 @@
+ALTER TABLE public.photos
+ADD COLUMN IF NOT EXISTS embedding_processed BOOLEAN NOT NULL DEFAULT FALSE;

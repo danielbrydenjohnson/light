@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
+    "@huggingface/transformers": "^4.2.0",
     "@supabase/supabase-js": "^2.108.2",
     "cloudinary": "^2.10.0",
     "exifreader": "^4.41.0",
