@@ -3,6 +3,8 @@
 import {
   useEffect,
   useMemo,
+  useRef,
+  useState,
   type MouseEvent,
 } from "react";
 
@@ -20,6 +22,7 @@ type LightboxProps = {
 
 const CLOUDINARY_UPLOAD_MARKER = "/image/upload/";
 const SIMILAR_PHOTO_COUNT = 5;
+const IMAGE_TRANSITION_DURATION = 300;
 
 function isCloudinaryUrl(url: string): boolean {
   return url.includes(CLOUDINARY_UPLOAD_MARKER);
@@ -166,17 +169,32 @@ export default function Lightbox({
   onPrevious,
   onSelectPhoto,
 }: LightboxProps) {
+  const [displayedPhoto, setDisplayedPhoto] =
+    useState(selectedPhoto);
+
+  const [outgoingPhoto, setOutgoingPhoto] =
+    useState<Photo | null>(null);
+
+  const [isIncomingVisible, setIsIncomingVisible] =
+    useState(true);
+
+  const displayedPhotoRef = useRef(selectedPhoto);
+  const transitionTimeoutRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const animationFrameRef = useRef<number | null>(null);
+
   const similarPhotos = useMemo(() => {
-    if (selectedPhoto.embedding.length === 0) {
+    if (displayedPhoto.embedding.length === 0) {
       return [];
     }
 
     return photos
-      .filter((photo) => photo.id !== selectedPhoto.id)
+      .filter((photo) => photo.id !== displayedPhoto.id)
       .map((photo) => ({
         photo,
         similarity: cosineSimilarity(
-          selectedPhoto.embedding,
+          displayedPhoto.embedding,
           photo.embedding,
         ),
       }))
@@ -190,10 +208,64 @@ export default function Lightbox({
       )
       .slice(0, SIMILAR_PHOTO_COUNT)
       .map((result) => result.photo);
-  }, [photos, selectedPhoto]);
+  }, [displayedPhoto, photos]);
 
-  const heading = getPhotoHeading(selectedPhoto);
-  const exifValues = getExifValues(selectedPhoto);
+  const heading = getPhotoHeading(displayedPhoto);
+  const exifValues = getExifValues(displayedPhoto);
+
+  useEffect(() => {
+    if (
+      selectedPhoto.id ===
+      displayedPhotoRef.current.id
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const targetPhoto = selectedPhoto;
+    const imagePreloader = new Image();
+
+    function completeImageSwap() {
+      if (cancelled) {
+        return;
+      }
+
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+
+      setOutgoingPhoto(displayedPhotoRef.current);
+      setIsIncomingVisible(false);
+
+      displayedPhotoRef.current = targetPhoto;
+      setDisplayedPhoto(targetPhoto);
+
+      animationFrameRef.current =
+        requestAnimationFrame(() => {
+          setIsIncomingVisible(true);
+        });
+
+      transitionTimeoutRef.current = setTimeout(() => {
+        setOutgoingPhoto(null);
+        transitionTimeoutRef.current = null;
+      }, IMAGE_TRANSITION_DURATION);
+    }
+
+    imagePreloader.onload = completeImageSwap;
+    imagePreloader.onerror = completeImageSwap;
+    imagePreloader.src = getLightboxImageUrl(targetPhoto);
+
+    return () => {
+      cancelled = true;
+      imagePreloader.onload = null;
+      imagePreloader.onerror = null;
+    };
+  }, [selectedPhoto]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -222,10 +294,19 @@ export default function Lightbox({
 
     return () => {
       document.body.style.overflow = previousOverflow;
+
       window.removeEventListener(
         "keydown",
         handleKeyDown,
       );
+
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
   }, [onClose, onNext, onPrevious]);
 
@@ -351,22 +432,68 @@ export default function Lightbox({
           md:py-12
         "
       >
-        <div className="flex w-full justify-center">
+        <div
+          className="
+            grid
+            w-full
+            place-items-center
+          "
+        >
+          {outgoingPhoto ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={getLightboxImageUrl(outgoingPhoto)}
+              alt=""
+              width={outgoingPhoto.width}
+              height={outgoingPhoto.height}
+              aria-hidden="true"
+              className={`
+                pointer-events-none
+                col-start-1
+                row-start-1
+                block
+                max-h-[78vh]
+                w-auto
+                max-w-full
+                object-contain
+                transition-opacity
+                duration-300
+                ease-in-out
+                md:max-w-[90vw]
+                ${
+                  isIncomingVisible
+                    ? "opacity-0"
+                    : "opacity-100"
+                }
+              `}
+            />
+          ) : null}
+
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            key={selectedPhoto.id}
-            src={getLightboxImageUrl(selectedPhoto)}
-            alt={selectedPhoto.title}
-            width={selectedPhoto.width}
-            height={selectedPhoto.height}
-            className="
+            key={displayedPhoto.id}
+            src={getLightboxImageUrl(displayedPhoto)}
+            alt={displayedPhoto.title}
+            width={displayedPhoto.width}
+            height={displayedPhoto.height}
+            className={`
+              col-start-1
+              row-start-1
               block
               max-h-[78vh]
               w-auto
               max-w-full
               object-contain
+              transition-opacity
+              duration-300
+              ease-in-out
               md:max-w-[90vw]
-            "
+              ${
+                isIncomingVisible
+                  ? "opacity-100"
+                  : "opacity-0"
+              }
+            `}
           />
         </div>
 
