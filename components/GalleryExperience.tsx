@@ -27,7 +27,7 @@ type ModelStatus =
   | "error";
 
 const SEARCH_DEBOUNCE_MS = 300;
-const SEARCH_SIMILARITY_THRESHOLD = 0.22;
+const SEARCH_SIMILITY_THRESHOLD = 0.22;
 const EMBEDDING_DIMENSIONS = 512;
 
 function SearchIcon() {
@@ -154,8 +154,11 @@ export default function GalleryExperience({
     searchRequestRef.current += 1;
 
     setQuery(nextQuery);
-    setSearchResults(null);
     setIsSearching(false);
+
+    if (nextQuery.trim().length === 0) {
+      setSearchResults(null);
+    }
   }
 
   useEffect(() => {
@@ -209,7 +212,7 @@ export default function GalleryExperience({
             .filter(
               ({ similarity }) =>
                 similarity >=
-                SEARCH_SIMILARITY_THRESHOLD,
+                SEARCH_SIMILITY_THRESHOLD,
             )
             .sort(
               (
