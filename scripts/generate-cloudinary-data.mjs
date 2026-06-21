@@ -46,11 +46,16 @@ async function fetchAllAssetsFromFolder(assetFolder) {
 }
 
 function createPhotoRecord(asset, index) {
+  const displayName = asset.display_name ?? asset.public_id;
+
   return {
     id: asset.asset_id,
+    cloudinary_public_id: asset.public_id,
+    cloudinary_url: asset.secure_url,
+    filename: displayName,
     url: asset.secure_url,
-    title: asset.display_name ?? asset.public_id,
-    dominant_hue: 0,
+    title: displayName,
+    dominant_hue: null,
     tile_size: "small",
     width: asset.width,
     height: asset.height,
