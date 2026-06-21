@@ -172,10 +172,6 @@ function PhotoTile({ photo, index, position }: PhotoTileProps) {
         decoding="async"
         className="photo-image block h-auto w-full"
       />
-
-      <div className="photo-overlay" aria-hidden="true">
-        <p className="photo-title">{photo.title}</p>
-      </div>
     </article>
   );
 }
