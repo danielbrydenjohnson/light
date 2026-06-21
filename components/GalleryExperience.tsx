@@ -27,7 +27,7 @@ type ModelStatus =
   | "error";
 
 const SEARCH_DEBOUNCE_MS = 300;
-const SEARCH_SIMILARITY_THRESHOLD = 0.24;
+const SEARCH_SIMILARITY_THRESHOLD = 0.23;
 const EMBEDDING_DIMENSIONS = 512;
 
 function SearchIcon() {
