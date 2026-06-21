@@ -1,4 +1,4 @@
-import PhotoGrid from "@/components/PhotoGrid";
+import GalleryExperience from "@/components/GalleryExperience";
 import { createPublicSupabaseClient } from "@/lib/supabase/public";
 import type { Photo, TileSize } from "@/types/photo";
 import { unstable_cache } from "next/cache";
@@ -41,13 +41,16 @@ function mapPhotoRow(row: SupabasePhotoRow): Photo {
     exif_shutter_speed: row.exif_shutter_speed,
     exif_iso: row.exif_iso,
     date_taken: row.date_taken,
-    embedding: Array.isArray(row.embedding) ? row.embedding : [],
+    embedding: Array.isArray(row.embedding)
+      ? row.embedding
+      : [],
   };
 }
 
 const getPhotos = unstable_cache(
   async (): Promise<Photo[]> => {
-    const supabase = createPublicSupabaseClient();
+    const supabase =
+      createPublicSupabaseClient();
 
     const { data, error } = await supabase
       .from("photos")
@@ -72,14 +75,24 @@ const getPhotos = unstable_cache(
           embedding
         `,
       )
-      .order("order_position", { ascending: true });
+      .order("order_position", {
+        ascending: true,
+      });
 
     if (error) {
-      console.error("Failed to load photos from Supabase:", error);
-      throw new Error("Failed to load photography portfolio.");
+      console.error(
+        "Failed to load photos from Supabase:",
+        error,
+      );
+
+      throw new Error(
+        "Failed to load photography portfolio.",
+      );
     }
 
-    return (data as SupabasePhotoRow[]).map(mapPhotoRow);
+    return (
+      data as SupabasePhotoRow[]
+    ).map(mapPhotoRow);
   },
   ["public-photos"],
   {
@@ -92,14 +105,6 @@ export default async function Home() {
   const photos = await getPhotos();
 
   return (
-    <main className="min-h-screen bg-[var(--bg-primary)]">
-      <header className="flex h-11 items-center px-3 md:h-12 md:px-4 xl:px-5">
-        <p className="text-sm font-medium uppercase tracking-[0.05em] text-[var(--text-secondary)]">
-          Light
-        </p>
-      </header>
-
-      <PhotoGrid photos={photos} />
-    </main>
+    <GalleryExperience photos={photos} />
   );
 }
