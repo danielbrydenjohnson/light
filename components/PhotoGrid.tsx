@@ -1,3 +1,4 @@
+import { getCloudinaryImageUrl } from "@/lib/cloudinary";
 import type { Photo } from "@/types/photo";
 
 type PhotoGridProps = {
@@ -6,9 +7,34 @@ type PhotoGridProps = {
 
 type PhotoTileProps = {
   photo: Photo;
+  index: number;
 };
 
-function PhotoTile({ photo }: PhotoTileProps) {
+const CLOUDINARY_UPLOAD_MARKER = "/image/upload/";
+
+const RESPONSIVE_IMAGE_WIDTHS = [400, 800, 1200, 1600];
+
+function isCloudinaryUrl(url: string): boolean {
+  return url.includes(CLOUDINARY_UPLOAD_MARKER);
+}
+
+function buildResponsiveSources(url: string): string {
+  return RESPONSIVE_IMAGE_WIDTHS.map(
+    (width) => `${getCloudinaryImageUrl(url, width)} ${width}w`,
+  ).join(", ");
+}
+
+function PhotoTile({ photo, index }: PhotoTileProps) {
+  const usesCloudinary = isCloudinaryUrl(photo.url);
+
+  const gridImageUrl = usesCloudinary
+    ? getCloudinaryImageUrl(photo.url, 400)
+    : photo.url;
+
+  const responsiveSources = usesCloudinary
+    ? buildResponsiveSources(photo.url)
+    : undefined;
+
   return (
     <article
       className="
@@ -22,13 +48,20 @@ function PhotoTile({ photo }: PhotoTileProps) {
         min-[1201px]:mb-[5px]
       "
     >
-      {/* Temporary Unsplash images for Phase 1. Cloudinary optimisation is added in Phase 2. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={photo.url}
+        src={gridImageUrl}
+        srcSet={responsiveSources}
+        sizes="
+          (max-width: 767px) calc(50vw - 14px),
+          (max-width: 1200px) calc(33.333vw - 16px),
+          calc(25vw - 20px)
+        "
         alt={photo.title}
         width={photo.width}
         height={photo.height}
+        loading={index < 6 ? "eager" : "lazy"}
+        decoding="async"
         className="photo-image block h-auto w-full"
       />
 
@@ -58,8 +91,8 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
         min-[1201px]:[column-gap:5px]
       "
     >
-      {photos.map((photo) => (
-        <PhotoTile key={photo.id} photo={photo} />
+      {photos.map((photo, index) => (
+        <PhotoTile key={photo.id} photo={photo} index={index} />
       ))}
     </section>
   );

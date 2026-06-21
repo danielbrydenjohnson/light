@@ -1,11 +1,15 @@
 import PhotoGrid from "@/components/PhotoGrid";
-import dummyPhotos from "@/data/dummy-photos.json";
+import cloudinaryPhotos from "@/data/cloudinary-photos.json";
 import type { Photo } from "@/types/photo";
 
+type CloudinaryPhoto = Photo & {
+  temporary_order: number;
+};
+
 export default function Home() {
-  const photos = [...(dummyPhotos as Photo[])].sort(
+  const photos = [...(cloudinaryPhotos as CloudinaryPhoto[])].sort(
     (firstPhoto, secondPhoto) =>
-      firstPhoto.dominant_hue - secondPhoto.dominant_hue,
+      firstPhoto.temporary_order - secondPhoto.temporary_order,
   );
 
   return (
